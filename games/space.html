@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space Shooter</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #1a1a2e;
+            font-family: 'Segoe UI', sans-serif;
+            color: white;
+        }
+
+        #game-container {
+            text-align: center;
+        }
+
+        canvas {
+            border: 2px solid #3498db;
+            border-radius: 5px;
+            background-color: #000;
+        }
+
+        #score {
+            font-size: 24px;
+            margin: 20px 0;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: linear-gradient(145deg, #3498db, #2980b9);
+            color: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        #home-btn {
+            background: linear-gradient(145deg, #e74c3c, #c0392b);
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <h1>Space Shooter</h1>
+        <div id="score">Score: 0</div>
+        <canvas id="gameCanvas" width="600" height="800"></canvas>
+        <div class="controls">
+            <button onclick="resetGame()">New Game</button>
+            <button id="home-btn" onclick="window.location.href='../index.html'">Back to Home</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+
+        // Game variables
+        let score = 0;
+        let isGameOver = false;
+        let bullets = [];
+        let enemies = [];
+        let stars = [];
+
+        // Player ship
+        const ship = {
+            x: canvas.width / 2,
+            y: canvas.height - 60,
+            width: 40,
+            height: 40,
+            speed: 5
+        };
+
+        // Create stars background
+        function createStars() {
+            for (let i = 0; i < 100; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 2 + 1,
+                    speed: Math.random() * 2 + 1
+                });
+            }
+        }
+
+        function drawStars() {
+            ctx.fillStyle = '#fff';
+            stars.forEach(star => {
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function updateStars() {
+            stars.forEach(star => {
+                star.y += star.speed;
+                if (star.y > canvas.height) {
+                    star.y = 0;
+                    star.x = Math.random() * canvas.width;
+                }
+            });
+        }
+
+        function drawShip() {
+            ctx.fillStyle = '#3498db';
+            ctx.beginPath();
+            ctx.moveTo(ship.x, ship.y);
+            ctx.lineTo(ship.x - 20, ship.y + 40);
+            ctx.lineTo(ship.x + 20, ship.y + 40);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        function drawBullets() {
+            ctx.fillStyle = '#f1c40f';
+            bullets.forEach(bullet => {
+                ctx.fillRect(bullet.x - 2, bullet.y, 4, 10);
+            });
+        }
+
+        function drawEnemies() {
+            ctx.fillStyle = '#e74c3c';
+            enemies.forEach(enemy => {
+                ctx.beginPath();
+                ctx.moveTo(enemy.x, enemy.y + 30);
+                ctx.lineTo(enemy.x - 15, enemy.y);
+                ctx.lineTo(enemy.x + 15, enemy.y);
+                ctx.closePath();
+                ctx.fill();
+            });
+        }
+
+        function createEnemy() {
+            if (enemies.length < 5) {
+                enemies.push({
+                    x: Math.random() * (canvas.width - 30) + 15,
+                    y: -30,
+                    speed: Math.random() * 2 + 2
+                });
+            }
+        }
+
+        function shoot() {
+            bullets.push({
+                x: ship.x,
+                y: ship.y,
+                speed: 7
+            });
+        }
+
+        function checkCollisions() {
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                for (let j = enemies.length - 1; j >= 0; j--) {
+                    const bullet = bullets[i];
+                    const enemy = enemies[j];
+                    if (bullet && enemy &&
+                        bullet.x > enemy.x - 15 &&
+                        bullet.x < enemy.x + 15 &&
+                        bullet.y < enemy.y + 30 &&
+                        bullet.y > enemy.y) {
+                        bullets.splice(i, 1);
+                        enemies.splice(j, 1);
+                        score += 10;
+                        scoreElement.textContent = `Score: ${score}`;
+                        break;
+                    }
+                }
+            }
+
+            // Check ship collision with enemies
+            for (let enemy of enemies) {
+                if (ship.x > enemy.x - 15 &&
+                    ship.x < enemy.x + 15 &&
+                    ship.y < enemy.y + 30 &&
+                    ship.y + 40 > enemy.y) {
+                    gameOver();
+                }
+            }
+        }
+
+        function updateGame() {
+            if (isGameOver) return;
+
+            // Clear canvas
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Update and draw stars
+            updateStars();
+            drawStars();
+
+            // Update bullets
+            bullets = bullets.filter(bullet => {
+                bullet.y -= bullet.speed;
+                return bullet.y > 0;
+            });
+
+            // Update enemies
+            enemies = enemies.filter(enemy => {
+                enemy.y += enemy.speed;
+                return enemy.y < canvas.height;
+            });
+
+            // Create new enemies
+            if (Math.random() < 0.02) {
+                createEnemy();
+            }
+
+            // Draw game objects
+            drawShip();
+            drawBullets();
+            drawEnemies();
+
+            // Check collisions
+            checkCollisions();
+
+            requestAnimationFrame(updateGame);
+        }
+
+        function gameOver() {
+            isGameOver = true;
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'white';
+            ctx.font = '48px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Game Over!', canvas.width / 2, canvas.height / 2);
+        }
+
+        function resetGame() {
+            score = 0;
+            isGameOver = false;
+            bullets = [];
+            enemies = [];
+            ship.x = canvas.width / 2;
+            scoreElement.textContent = `Score: ${score}`;
+            updateGame();
+        }
+
+        // Controls
+        document.addEventListener('keydown', (e) => {
+            if (isGameOver) return;
+
+            switch(e.key.toLowerCase()) {
+                case 'arrowleft':
+                case 'a':
+                    if (ship.x > 20) ship.x -= ship.speed;
+                    break;
+                case 'arrowright':
+                case 'd':
+                    if (ship.x < canvas.width - 20) ship.x += ship.speed;
+                    break;
+                case ' ':
+                    shoot();
+                    break;
+            }
+        });
+
+        // Touch controls
+        let touchStartX = 0;
+        canvas.addEventListener('touchstart', (e) => {
+            touchStartX = e.touches[0].clientX;
+            shoot();
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            if (isGameOver) return;
+            e.preventDefault();
+            const touchX = e.touches[0].clientX;
+            const diff = touchX - touchStartX;
+            
+            if (diff > 0 && ship.x < canvas.width - 20) {
+                ship.x += ship.speed;
+            } else if (diff < 0 && ship.x > 20) {
+                ship.x -= ship.speed;
+            }
+            
+            touchStartX = touchX;
+        });
+
+        // Initialize game
+        createStars();
+        resetGame();
+    </script>
+</body>
+</html>

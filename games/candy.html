@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Candy Crush</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #1a1a2e;
+            font-family: 'Segoe UI', sans-serif;
+            color: white;
+        }
+
+        #game-container {
+            text-align: center;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(8, 50px);
+            grid-template-rows: repeat(8, 50px);
+            gap: 2px;
+            background-color: #2a2a3c;
+            padding: 10px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .candy {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            animation: spawn 0.5s ease-out;
+        }
+
+        .candy:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .candy.selected {
+            animation: pulse 1s infinite;
+        }
+
+        .candy.match {
+            animation: pop 0.4s ease-out;
+        }
+
+        @keyframes spawn {
+            from {
+                transform: scale(0);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(0); }
+        }
+
+        #score {
+            font-size: 24px;
+            margin: 20px 0;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            animation: scoreUpdate 0.3s ease-out;
+        }
+
+        @keyframes scoreUpdate {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .controls {
+                    margin-top: 20px;
+                    display: flex;
+                    gap: 10px;
+                    justify-content: center;
+        }
+
+        button {
+                    padding: 12px 24px;
+                    font-size: 16px;
+                    border: none;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    background: linear-gradient(145deg, #3498db, #2980b9);
+                    color: white;
+                    transition: all 0.3s ease;
+                    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+                    text-transform: uppercase;
+                    font-weight: bold;
+                    letter-spacing: 1px;
+        }
+
+        button:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+                    filter: brightness(1.1);
+        }
+
+        button:active {
+                    transform: translateY(1px);
+                    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        #home-btn {
+                    background: linear-gradient(145deg, #e74c3c, #c0392b);
+        }
+
+        #home-btn:hover {
+                    background: linear-gradient(145deg, #c0392b, #e74c3c);
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <h1>Candy Crush</h1>
+        <div id="score">Score: 0</div>
+        <div class="grid" id="board"></div>
+        <div class="controls">
+            <button onclick="resetGame()">New Game</button>
+            <button id="home-btn" onclick="window.location.href='../index.html'">Back to Home</button>
+        </div>
+    </div>
+
+    <script>
+        const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
+        const boardSize = 8;
+        let score = 0;
+        let selectedCandy = null;
+        let board = [];
+
+        function createBoard() {
+            const boardElement = document.getElementById('board');
+            boardElement.innerHTML = '';
+            board = [];
+
+            for (let i = 0; i < boardSize; i++) {
+                board[i] = [];
+                for (let j = 0; j < boardSize; j++) {
+                    const candy = document.createElement('div');
+                    candy.className = 'candy';
+                    candy.dataset.row = i;
+                    candy.dataset.col = j;
+                    const color = colors[Math.floor(Math.random() * colors.length)];
+                    candy.style.backgroundColor = color;
+                    board[i][j] = color;
+                    candy.addEventListener('click', handleCandyClick);
+                    boardElement.appendChild(candy);
+                }
+            }
+        }
+
+        function handleCandyClick(event) {
+            const candy = event.target;
+            const row = parseInt(candy.dataset.row);
+            const col = parseInt(candy.dataset.col);
+
+            if (!selectedCandy) {
+                selectedCandy = candy;
+                candy.classList.add('selected');
+            } else {
+                selectedCandy.classList.remove('selected');
+                const selectedRow = parseInt(selectedCandy.dataset.row);
+                const selectedCol = parseInt(selectedCandy.dataset.col);
+
+                if (isAdjacent(row, col, selectedRow, selectedCol)) {
+                    swapCandies(selectedRow, selectedCol, row, col);
+                    if (!checkMatches()) {
+                        swapCandies(selectedRow, selectedCol, row, col);
+                    }
+                }
+
+                selectedCandy.style.transform = '';
+                selectedCandy = null;
+            }
+        }
+
+        function isAdjacent(row1, col1, row2, col2) {
+            return Math.abs(row1 - row2) + Math.abs(col1 - col2) === 1;
+        }
+
+        function swapCandies(row1, col1, row2, col2) {
+            const candy1 = document.querySelector(`[data-row="${row1}"][data-col="${col1}"]`);
+            const candy2 = document.querySelector(`[data-row="${row2}"][data-col="${col2}"]`);
+            const tempColor = board[row1][col1];
+            
+            board[row1][col1] = board[row2][col2];
+            board[row2][col2] = tempColor;
+            
+            candy1.style.backgroundColor = board[row1][col1];
+            candy2.style.backgroundColor = board[row2][col2];
+        }
+
+        function checkMatches() {
+            let hasMatches = false;
+            
+            // Check rows
+            for (let i = 0; i < boardSize; i++) {
+                for (let j = 0; j < boardSize - 2; j++) {
+                    if (board[i][j] === board[i][j+1] && board[i][j] === board[i][j+2]) {
+                        hasMatches = true;
+                        score += 30;
+                        for (let k = j; k < j + 3; k++) {
+                            const candy = document.querySelector(`[data-row="${i}"][data-col="${k}"]`);
+                            candy.classList.add('match');
+                            setTimeout(() => {
+                                board[i][k] = colors[Math.floor(Math.random() * colors.length)];
+                                candy.style.backgroundColor = board[i][k];
+                                candy.classList.remove('match');
+                            }, 300);
+                        }
+                    }
+                }
+            }
+
+            // Check columns
+            for (let j = 0; j < boardSize; j++) {
+                for (let i = 0; i < boardSize - 2; i++) {
+                    if (board[i][j] === board[i+1][j] && board[i][j] === board[i+2][j]) {
+                        hasMatches = true;
+                        score += 30;
+                        for (let k = i; k < i + 3; k++) {
+                            board[k][j] = colors[Math.floor(Math.random() * colors.length)];
+                            const candy = document.querySelector(`[data-row="${k}"][data-col="${j}"]`);
+                            candy.style.backgroundColor = board[k][j];
+                        }
+                    }
+                }
+            }
+
+            document.getElementById('score').textContent = `Score: ${score}`;
+            return hasMatches;
+        }
+
+        function resetGame() {
+            score = 0;
+            document.getElementById('score').textContent = `Score: ${score}`;
+            createBoard();
+        }
+
+        // Initialize game
+        createBoard();
+    </script>
+</body>
+</html>

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Puzzle Game</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .game-container {
+            background-color: #1e1e1e;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(52, 152, 219, 0.2);
+            text-align: center;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .word-display {
+            font-size: 2.5em;
+            margin: 20px 0;
+            letter-spacing: 8px;
+            font-family: monospace;
+        }
+
+        .hint {
+            color: #3498db;
+            margin: 15px 0;
+            font-style: italic;
+        }
+
+        .input-section {
+            margin: 20px 0;
+        }
+
+        input {
+            padding: 10px;
+            font-size: 1.2em;
+            border: 2px solid #3498db;
+            border-radius: 5px;
+            background: #2c3e50;
+            color: white;
+            margin-right: 10px;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 1em;
+            border: none;
+            border-radius: 5px;
+            background: linear-gradient(145deg, #3498db, #2980b9);
+            color: white;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        .score {
+            font-size: 1.2em;
+            margin: 20px 0;
+        }
+
+        .message {
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .correct {
+            background-color: #27ae60;
+        }
+
+        .wrong {
+            background-color: #c0392b;
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        #home-btn {
+            background: linear-gradient(145deg, #e74c3c, #c0392b);
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Word Puzzle</h1>
+        <div class="score">Score: <span id="score">0</span></div>
+        <div class="word-display" id="wordDisplay">_ _ _ _ _</div>
+        <div class="hint" id="hint">Hint will appear here</div>
+        <div class="input-section">
+            <input type="text" id="guessInput" placeholder="Enter your guess" maxlength="20">
+            <button onclick="checkGuess()">Guess</button>
+        </div>
+        <div id="message" class="message"></div>
+        <div class="controls">
+            <button onclick="newGame()">New Game</button>
+            <button id="home-btn" onclick="window.location.href='../index.html'">Back to Home</button>
+        </div>
+    </div>
+
+    <script>
+        const words = [
+            { word: "JAVASCRIPT", hint: "A popular programming language for web development" },
+            { word: "PYTHON", hint: "A snake-like programming language" },
+            { word: "DATABASE", hint: "Where data is stored and organized" },
+            { word: "ALGORITHM", hint: "Step-by-step procedure to solve a problem" },
+            { word: "NETWORK", hint: "Computers connected together" },
+            { word: "SECURITY", hint: "Protection against cyber threats" },
+            { word: "INTERFACE", hint: "Where user meets computer" },
+            { word: "BROWSER", hint: "Program to surf the web" },
+            { word: "KEYBOARD", hint: "Input device with letters and numbers" },
+            { word: "MONITOR", hint: "Display device for computers" }
+        ];
+
+        let currentWord = "";
+        let currentHint = "";
+        let score = 0;
+
+        function selectRandomWord() {
+            const randomIndex = Math.floor(Math.random() * words.length);
+            currentWord = words[randomIndex].word;
+            currentHint = words[randomIndex].hint;
+            document.getElementById('wordDisplay').textContent = '_ '.repeat(currentWord.length);
+            document.getElementById('hint').textContent = `Hint: ${currentHint}`;
+            document.getElementById('message').textContent = '';
+            document.getElementById('guessInput').value = '';
+        }
+
+        function checkGuess() {
+            const guess = document.getElementById('guessInput').value.toUpperCase();
+            const messageElement = document.getElementById('message');
+
+            if (guess === currentWord) {
+                score += 10;
+                document.getElementById('score').textContent = score;
+                messageElement.textContent = 'Correct! Well done!';
+                messageElement.className = 'message correct';
+                setTimeout(selectRandomWord, 1500);
+            } else {
+                messageElement.textContent = 'Wrong guess. Try again!';
+                messageElement.className = 'message wrong';
+            }
+        }
+
+        function newGame() {
+            score = 0;
+            document.getElementById('score').textContent = score;
+            selectRandomWord();
+        }
+
+        // Handle Enter key
+        document.getElementById('guessInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                checkGuess();
+            }
+        });
+
+        // Initialize game
+        selectRandomWord();
+    </script>
+</body>
+</html>

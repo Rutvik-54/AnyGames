@@ -1,2 +1,2 @@
 # AnyGames
-Different games
+Different games.
